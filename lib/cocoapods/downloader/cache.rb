@@ -77,13 +77,6 @@ module Pod
       # @return [Void]
       #
       def ensure_matching_version
-        version_file = root + 'VERSION'
-        version = version_file.read.strip if version_file.file?
-
-        root.rmtree if version != Pod::VERSION && root.exist?
-        root.mkpath
-
-        version_file.open('w') { |f| f << Pod::VERSION }
       end
 
       # @param  [Request] request
@@ -112,7 +105,7 @@ module Pod
       #
       def path_for_spec(request, slug_opts = {})
         path = root + 'Specs' + request.slug(slug_opts)
-        path.sub_ext('.podspec.json')
+        Pathname.new(path.to_path + '.podspec.json')
       end
 
       # @param  [Request] request

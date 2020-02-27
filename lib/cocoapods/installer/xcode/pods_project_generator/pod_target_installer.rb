@@ -35,15 +35,6 @@ module Pod
               test_file_accessors = target.file_accessors.select { |fa| fa.spec.test_specification? }
               app_file_accessors = target.file_accessors.select { |fa| fa.spec.app_specification? }
 
-              unless target.should_build?
-                # For targets that should not be built (e.g. pre-built vendored frameworks etc), we add a placeholder
-                # PBXAggregateTarget that will be used to wire up dependencies later.
-                native_target = add_placeholder_target
-                resource_bundle_targets = add_resources_bundle_targets(library_file_accessors).values.flatten
-                create_xcconfig_file(native_target, resource_bundle_targets)
-                return TargetInstallationResult.new(target, native_target, resource_bundle_targets)
-              end
-
               native_target = add_target
               resource_bundle_targets = add_resources_bundle_targets(library_file_accessors).values.flatten
 
@@ -55,7 +46,9 @@ module Pod
               app_resource_bundle_targets = add_resources_bundle_targets(app_file_accessors)
 
               add_files_to_build_phases(native_target, test_native_targets, app_native_targets)
-              validate_targets_contain_sources(test_native_targets + app_native_targets + [native_target])
+              if target.should_build?
+                validate_targets_contain_sources(test_native_targets + app_native_targets + [native_target])
+              end
 
               create_xcconfig_file(native_target, resource_bundle_targets)
               create_test_xcconfig_files(test_native_targets, test_resource_bundle_targets)
@@ -124,6 +117,14 @@ module Pod
               end
               create_dummy_source(native_target)
               clean_support_files_temp_dir
+
+              unless target.should_build?
+                # For targets that should not be built (e.g. pre-built vendored frameworks etc), we add a placeholder
+                # PBXAggregateTarget that will be used to wire up dependencies later.
+                native_target = add_placeholder_target
+                return TargetInstallationResult.new(target, native_target, resource_bundle_targets)
+              end
+
               TargetInstallationResult.new(target, native_target, resource_bundle_targets,
                                            test_native_targets, test_resource_bundle_targets, test_app_host_targets,
                                            app_native_targets, app_resource_bundle_targets)
